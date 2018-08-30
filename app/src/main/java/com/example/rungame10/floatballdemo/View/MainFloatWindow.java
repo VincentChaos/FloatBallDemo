@@ -186,6 +186,7 @@ public class MainFloatWindow extends LinearLayout {
             if (isHide){
                 handler.sendEmptyMessage(MSG_WINDOW_SHOW);
                 canHide = true;
+                waitToHideWindow();
             }else{
                 //启动切换账号窗口
                 canHide = false;
@@ -207,11 +208,11 @@ public class MainFloatWindow extends LinearLayout {
         mParams = params;
     }
 
+    //实现自动检测悬浮窗左右然后实现自动贴边
     private void autoMoveToSide(){
         new Thread(){
             @Override
             public void run(){
-                //实现自动检测悬浮窗左右然后实现自动贴边
                 DisplayMetrics d = context.getResources().getDisplayMetrics();
                 while (true){
                     int newX = saveX;
@@ -243,6 +244,7 @@ public class MainFloatWindow extends LinearLayout {
                         waitToHideWindow();
                         break;
                     } else {
+                        //移动，通知Handler刷新界面
                         Message message = new Message();
                         message.what = MSG_UPDATE_POS;
                         message.arg1 = newX;
@@ -281,7 +283,7 @@ public class MainFloatWindow extends LinearLayout {
     }
 
     private void doClick() {
-        NotifyDialog notifyDialog = new NotifyDialog(context,"点击了，略略略");
+        NotifyDialog notifyDialog = new NotifyDialog(context,"点击了悬浮球，略略略点来干嘛");
         notifyDialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
         notifyDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
             @Override
