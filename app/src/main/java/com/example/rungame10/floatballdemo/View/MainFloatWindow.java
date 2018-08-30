@@ -14,9 +14,7 @@ import android.view.MotionEvent;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
-import com.example.rungame10.floatballdemo.Model.SaveLocation;
 import com.example.rungame10.floatballdemo.R;
 
 import butterknife.BindView;
@@ -24,23 +22,23 @@ import butterknife.ButterKnife;
 
 
 public class MainFloatWindow extends LinearLayout {
-    private final static int MSG_UPDATE_POS = 1;
-    private final static int MSG_WINDOW_HIDE = 2;
-    private final static int MSG_WINDOW_SHOW = 3;
-
+    private final static int MSG_UPDATE_POS = 1;                //Msg形式，更新位置信息
+    private final static int MSG_WINDOW_HIDE = 2;               //Msg形式，隐藏悬浮窗
+    private final static int MSG_WINDOW_SHOW = 3;               //Msg形式，显示悬浮窗
+    public static int saveX = -100,saveY = -100;                //保存的XY坐标值
     private Context context;
-    private ImageView ivFloat;
-    private boolean isClick;
-    private float mTouchStartX, mTouchStartY;        //手指按下时坐标
-    private long startTime,endTime;
+    @BindView(R.id.iv)
+    ImageView ivFloat;
+    private boolean isClick;                                    //boolean变量，是否被点击
+    private float mTouchStartX, mTouchStartY;                   //手指按下时坐标
+    private long startTime,endTime;                             //点击的开始、结束时间
     private WindowManager.LayoutParams mParams;
     private WindowManager mWindowManager;
-    private boolean isOnLeft;                //控件是否在左边
-    private int[] location = {-100,-100};
-    int moveParam;                                  //自动贴边移动数值
+    private boolean isOnLeft;                                   //控件是否在左边
+    int moveParam;                                              //自动贴边移动数值
 
-    private boolean isHide = false;                 //悬浮球是否隐藏
-    private boolean canHide = true;                 //悬浮球能否隐藏
+    private boolean isHide = false;                             //悬浮球是否隐藏
+    private boolean canHide = true;                             //悬浮球能否隐藏，用于显示点击事件窗口时不隐藏悬浮球
 
     public MainFloatWindow(Context context){
         this(context,null);
@@ -57,29 +55,31 @@ public class MainFloatWindow extends LinearLayout {
                     //处理贴边方法传递的xy值刷新悬浮窗
                     mParams.x = msg.arg1;
                     mParams.y = msg.arg2;
-                    location[0] = location[0] + moveParam;
+                    saveX = saveX + moveParam;
                     mWindowManager.updateViewLayout(MainFloatWindow.this,mParams);
                     break;
                 case MSG_WINDOW_HIDE:
                     //半隐藏悬浮窗
                     if (isOnLeft) {
+                        //半隐藏动画，左移一半悬浮球，透明度变为0.4
                         int toX = -getWidth()/2;
                         ObjectAnimator trans = ObjectAnimator.ofFloat(ivFloat,"translationX",0,toX);
                         ObjectAnimator alpha = ObjectAnimator.ofFloat(ivFloat,"alpha",1.0f,0.4f);
                         AnimatorSet set = new AnimatorSet();
                         set.play(trans).with(alpha);
-                        set.setDuration(100);
+                        set.setDuration(100);           //动画执行时间
                         set.start();
                     }else {
+                        //半隐藏动画，右移一半悬浮球，透明度变为0.4
                         int toX = getWidth()/2;
                         ObjectAnimator trans = ObjectAnimator.ofFloat(ivFloat,"translationX",0,toX);
                         ObjectAnimator alpha = ObjectAnimator.ofFloat(ivFloat,"alpha",1.0f,0.4f);
                         AnimatorSet set = new AnimatorSet();
                         set.play(trans).with(alpha);
-                        set.setDuration(100);
+                        set.setDuration(100);           //动画执行时间
                         set.start();
                     }
-                    isHide = true;
+                    isHide = true;                      //悬浮球隐藏
                     break;
                 case MSG_WINDOW_SHOW:
                     //显示悬浮窗
@@ -89,7 +89,7 @@ public class MainFloatWindow extends LinearLayout {
                     set.play(trans).with(alpha);
                     set.setDuration(100);
                     set.start();
-                    isHide = false;
+                    isHide = false;                     //悬浮球显示
                     break;
             }
         }
@@ -99,17 +99,23 @@ public class MainFloatWindow extends LinearLayout {
         super(context,attrs);
         mWindowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         LayoutInflater.from(context).inflate(R.layout.float_layout,this);
-        ivFloat = findViewById(R.id.iv);
-        if(location[0] == -100 && location[1] == -100){
+        ButterKnife.bind(this);
+
+        //首次初始化，位置为-100，-100
+        if(saveX == -100 && saveY == -100){
             //位置未更新
-            if(SaveLocation.saveX <= 0){
+            isOnLeft = true;
+            waitToHideWindow();
+            saveX = (int)MainFloatWindow.this.getX();
+            saveY = (int)MainFloatWindow.this.getY();
+        }else {
+            //关闭悬浮球后重启，保存有悬浮球关闭前的位置参数
+            if (saveX <=0 ){
                 isOnLeft = true;
             }else {
                 isOnLeft = false;
             }
             waitToHideWindow();
-            location[0] = (int)MainFloatWindow.this.getX();
-            location[1] = (int)MainFloatWindow.this.getY();
         }
     }
 
@@ -139,8 +145,8 @@ public class MainFloatWindow extends LinearLayout {
                     mParams.x = (int) (x - mTouchStartX);
                     mParams.y = (int) (y - mTouchStartY);
                     mWindowManager.updateViewLayout(this, mParams);
-                    location[0] = mParams.x;
-                    location[1] = mParams.y;
+                    saveX = mParams.x;
+                    saveY = mParams.y;
                     if(isHide){
                         handler.sendEmptyMessage(MSG_WINDOW_SHOW);
                     }
@@ -161,20 +167,12 @@ public class MainFloatWindow extends LinearLayout {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    isOnLeft = (location[0] + getWidth()/2) <=(d.widthPixels/2);
+                    isOnLeft = (saveX + getWidth()/2) <=(d.widthPixels/2);
                     moveParam = isOnLeft ? -20 : 20;
                     autoMoveToSide();       //自动贴边
                 }else {
                     //无移动，手指放开
                     endTime = System.currentTimeMillis();
-                    if(location[0] == -100 && location[1] == -100){
-                        //若初始位置未保存
-                        mParams.x = (int) (x - mTouchStartX);
-                        mParams.y = (int) (y - mTouchStartY);
-                        location[0] = mParams.x;
-                        location[1] = mParams.y;
-                        mWindowManager.updateViewLayout(this, mParams);
-                    }
                     //当从点击到弹起小于半秒的时候,则判断为点击,如果超过则不响应点击事件
                     if ((endTime - startTime) > 0.1 * 1000L) {
                         isClick = false;
@@ -216,8 +214,8 @@ public class MainFloatWindow extends LinearLayout {
                 //实现自动检测悬浮窗左右然后实现自动贴边
                 DisplayMetrics d = context.getResources().getDisplayMetrics();
                 while (true){
-                    int newX = location[0];
-                    int newY = location[1];
+                    int newX = saveX;
+                    int newY = saveY;
                     if (isOnLeft && newX<=0) {     //已移至最左侧
                         newX = 0;
                         Message message = new Message();
@@ -225,8 +223,8 @@ public class MainFloatWindow extends LinearLayout {
                         message.arg1 = newX;
                         message.arg2 = newY;
                         handler.sendMessage(message);
-                        SaveLocation.saveX = newX;
-                        SaveLocation.saveY = newY;
+                        saveX = newX;
+                        saveY = newY;
                         //保存当前悬浮窗位置
                         canHide = true;
                         waitToHideWindow();
@@ -238,8 +236,8 @@ public class MainFloatWindow extends LinearLayout {
                         message.arg1 = newX;
                         message.arg2 = newY;
                         handler.sendMessage(message);
-                        SaveLocation.saveX = newX;
-                        SaveLocation.saveY = newY;
+                        saveX = newX;
+                        saveY = newY;
                         //保存当前悬浮窗位置
                         canHide = true;
                         waitToHideWindow();

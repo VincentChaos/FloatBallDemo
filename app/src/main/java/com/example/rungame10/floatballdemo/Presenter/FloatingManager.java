@@ -5,11 +5,11 @@ import android.content.pm.PackageManager;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.WindowManager;
 
 
-import com.example.rungame10.floatballdemo.Model.SaveLocation;
 import com.example.rungame10.floatballdemo.View.MainFloatWindow;
 
 /**
@@ -59,12 +59,14 @@ public class FloatingManager {
         //窗口高度
         int screenHeight = dm.heightPixels;
         //如无保存XY值，以屏幕左上角为原点，设置x、y初始值，相对于gravity
-        if(SaveLocation.saveX == -100 && SaveLocation.saveY == -100) {
+        if(MainFloatWindow.saveX == 0 && MainFloatWindow.saveY == 0) {
             mParams.x = 0;
             mParams.y = (int)screenHeight / 2;
+            MainFloatWindow.saveX = 0;
+            MainFloatWindow.saveY = mParams.y;
         }else {
-            mParams.x = SaveLocation.saveX;
-            mParams.y = SaveLocation.saveY;
+            mParams.x = MainFloatWindow.saveX;
+            mParams.y = MainFloatWindow.saveY;
         }
         //设置悬浮窗口长宽数据
         mParams.width = WindowManager.LayoutParams.WRAP_CONTENT;
